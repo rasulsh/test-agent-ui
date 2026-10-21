@@ -20,6 +20,18 @@ jobs:
           echo "Runner public IP: $(curl -s https://api.ipify.org)"
           echo "Start time (UTC): $(date -u '+%Y-%m-%d %H:%M:%S')"
 
+      # Work around MTU black hole on the path to the server:
+      # force smaller TCP segments for all connections to the FTP host.
+      - name: Clamp TCP MSS
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          SERVER_IP=$(getent ahostsv4 "$FTP_SERVER" | awk 'NR==1{print $1}')
+          sudo iptables -t mangle -A OUTPUT -p tcp -d "$SERVER_IP" \
+            --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1200
+          sudo sysctl -w net.ipv4.tcp_mtu_probing=1
+          echo "MSS clamped to 1200 for $SERVER_IP"
+
       - name: Upload files via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
