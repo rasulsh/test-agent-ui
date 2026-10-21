@@ -13,7 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Show runner IP
+        run: |
+          echo "Runner public IP: $(curl -s https://api.ipify.org)"
+          echo "Start time (UTC): $(date -u '+%Y-%m-%d %H:%M:%S')"
 
       - name: Upload files via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -21,11 +26,13 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp            # ftp | ftps
+          protocol: ftp             # ftp | ftps
           port: 21
           local-dir: ./             # must end with /
-          server-dir: public_html/  # must end with /
+          server-dir: /             # must end with /
           dry-run: ${{ inputs.dry_run }}
+          log-level: verbose
+          timeout: 60000            # ms
           exclude: |
             **/.git*
             **/.git*/**
